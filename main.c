@@ -14,6 +14,9 @@ struct {
 typedef enum {
   OP_CONSTANT,
   OP_ADD,
+  OP_SUB,
+  OP_MUL,
+  OP_DIV,
   OP_DONE,
 } opcode;
 
@@ -46,6 +49,7 @@ uint8_t trans(unsigned char c){
 }
 
 uint16_t decode_constant(uint8_t upper, uint8_t lower) {
+  // gigedian
   return 255*upper + lower;
 }
 
@@ -64,10 +68,30 @@ exec_result exec_interpret(uint8_t *bytecode) {
         break;
       }
       case OP_ADD: {
-        uint16_t arg_right = vm_pop();
-        uint16_t arg_left = vm_pop();
-        uint16_t res = arg_right+arg_left;
-        vm_push(res);
+        uint16_t r = vm_pop();
+        uint16_t l = vm_pop();
+        vm_push(l+r);
+        break;
+      }
+      case OP_SUB: {
+        uint16_t r = vm_pop();
+        uint16_t l = vm_pop();
+        vm_push(l-r);
+        break;
+      }
+      case OP_MUL: {
+        uint16_t r = vm_pop();
+        uint16_t l = vm_pop();
+        vm_push(l*r);
+        break;
+      }
+      case OP_DIV: {
+        uint16_t r = vm_pop();
+        uint16_t l = vm_pop();
+        if (r == 0) {
+          return ERROR_DIVISION_BY_ZERO;
+        }
+        vm_push(l/r);
         break;
       }
       case OP_DONE:
@@ -95,8 +119,6 @@ uint8_t* parse_bytecode(char* str) {
   // TODO: replace 100
   bytecode = (uint8_t *)malloc(100);
   if(!bytecode) {
-    printf("can not allocate memory\n");
-    return NULL;
   }
   int p = 0, cnt = 0;
   while (cnt < strlen(str)){
@@ -116,9 +138,12 @@ int main(int argc, char **argv) {
   uint8_t* bytecode;
   bytecode = parse_bytecode(argv[1]);
   // or read from serial
-  exec_interpret(bytecode); 
+  exec_result res = exec_interpret(bytecode); 
+  if (res != SUCCESS) {
+    fprintf(stderr, "runtime error");
+    return 1;
+  }
   free(bytecode);
   return vm_pop();
 }
-
 
