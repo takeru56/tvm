@@ -126,7 +126,6 @@ uint8_t* parse_bytecode(char* str) {
     uint8_t low = trans(str[cnt++]);
     bytecode[p++] = up+low;
   }
-  bytecode[p] = OP_DONE;
   return bytecode;
 }
 

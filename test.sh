@@ -1,12 +1,19 @@
 #!/bin/sh
 
 assert() {
-  expected="$1"
-  input="$2"
+  # arguments
+  source=$1
+  expected=$2
 
-  ./tvm "$input"
+  # compile to bytecode
+  go run ~/go/1.14.6/src/github.com/takeru56/t $source > out.tt
+  bytecode=$(<out.tt)
+
+  # execute interpleter
+  ./tvm "$bytecode"
   actual=$?
 
+  # output results
   ESC=$(printf '\033')
   if [ "$actual" = "$expected" ]; then
     printf "${ESC}[32m%s${ESC}[m\n" "[PASS] $input => $actual"
@@ -17,10 +24,11 @@ assert() {
 
 echo "# TESTCASES"
 echo "## Calculator Test"
-assert 2   "00000100000101"
-assert 255 "0000FF00000001"
-assert 1   "0000FF0000FE02" 
-assert 160 "00000A00001003"
-assert 1   "00FFFF00FFFF04"
+assert 1+1 2
+assert 255+0 255
+assert 255-254 1
+assert 16*10 160
+assert 65025/65025 1
 echo "DONE"
 
+rm out.tt
