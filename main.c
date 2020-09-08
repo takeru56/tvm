@@ -4,10 +4,12 @@
 #include <string.h>
 
 #define STACK_MAX 256
+#define GLOBAL_MAX 256
 
 struct {
   uint8_t *ip;
   uint16_t stack[STACK_MAX];
+  uint16_t global[GLOBAL_MAX];
   uint16_t *stack_top;
 } vm;
 
@@ -18,6 +20,8 @@ typedef enum {
   OP_MUL,
   OP_DIV,
   OP_DONE,
+  LOAD_GLOBAL,
+  STORE_GLOBAL,
 } opcode;
 
 typedef enum exec_result {
@@ -49,7 +53,7 @@ uint8_t trans(unsigned char c){
 }
 
 uint16_t decode_constant(uint8_t upper, uint8_t lower) {
-  // gigedian
+  // bigendian
   return 255*upper + lower;
 }
 
@@ -94,8 +98,18 @@ exec_result exec_interpret(uint8_t *bytecode) {
         vm_push(l/r);
         break;
       }
-      case OP_DONE:
-        return SUCCESS;
+      case OP_DONE: return SUCCESS;
+      case LOAD_GLOBAL: {
+        uint8_t index = *vm.ip++;
+        vm_push(vm.global[index]);
+        break;
+      }
+      case STORE_GLOBAL: {
+        uint8_t index= *vm.ip++;
+        vm.global[index] = vm_pop();
+        vm_push(vm.global[index]);
+        break;
+      }
       default:
       return ERROR_UNKNOWN_OPCODE;
     }
@@ -137,7 +151,7 @@ int main(int argc, char **argv) {
   uint8_t* bytecode;
   bytecode = parse_bytecode(argv[1]);
   // or read from serial
-  exec_result res = exec_interpret(bytecode); 
+  exec_result res = exec_interpret(bytecode);
   if (res != SUCCESS) {
     fprintf(stderr, "runtime error");
     return 1;
@@ -145,4 +159,3 @@ int main(int argc, char **argv) {
   free(bytecode);
   return vm_pop();
 }
-
