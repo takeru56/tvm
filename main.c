@@ -2,15 +2,31 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdbool.h>
 
 #define STACK_MAX 256
 #define GLOBAL_MAX 256
+#define NUMBER_VAL(value) ((Value){ VAL_NUMBER, { .number = value } })
+
+typedef enum {
+  VAL_BOOL,
+  VAL_NIL,
+  VAL_NUMBER,
+} valueType;
+
+typedef struct {
+  valueType type;
+  union {
+    bool boolean;
+    uint16_t number;
+  } as;
+} Value;
 
 struct {
   uint8_t *ip;
-  uint16_t stack[STACK_MAX];
-  uint16_t global[GLOBAL_MAX];
-  uint16_t *stack_top;
+  Value stack[STACK_MAX];
+  Value global[GLOBAL_MAX];
+  Value *stack_top;
 } vm;
 
 typedef enum {
@@ -35,12 +51,12 @@ void vm_init(){
   vm.stack_top = vm.stack;
 }
 
-void vm_push(uint16_t value) {
+void vm_push(Value value) {
   *vm.stack_top = value;
   vm.stack_top++;
 }
 
-uint16_t vm_pop() {
+Value vm_pop() {
   vm.stack_top--;
   return *vm.stack_top;
 }
@@ -68,34 +84,34 @@ exec_result exec_interpret(uint8_t *bytecode) {
         uint8_t upper = *vm.ip++;
         uint8_t lower = *vm.ip++;
         uint16_t constant = decode_constant(upper, lower);
-        vm_push(constant);
+        vm_push(NUMBER_VAL(constant));
         break;
       }
       case OP_ADD: {
-        uint16_t r = vm_pop();
-        uint16_t l = vm_pop();
-        vm_push(l+r);
+        Value r = vm_pop();
+        Value l = vm_pop();
+        vm_push(NUMBER_VAL(l.as.number+r.as.number));
         break;
       }
       case OP_SUB: {
-        uint16_t r = vm_pop();
-        uint16_t l = vm_pop();
-        vm_push(l-r);
+        Value r = vm_pop();
+        Value l = vm_pop();
+        vm_push(NUMBER_VAL(l.as.number-r.as.number));
         break;
       }
       case OP_MUL: {
-        uint16_t r = vm_pop();
-        uint16_t l = vm_pop();
-        vm_push(l*r);
+        Value r = vm_pop();
+        Value l = vm_pop();
+        vm_push(NUMBER_VAL(l.as.number*r.as.number));
         break;
       }
       case OP_DIV: {
-        uint16_t r = vm_pop();
-        uint16_t l = vm_pop();
-        if (r == 0) {
+        Value r = vm_pop();
+        Value l = vm_pop();
+        if (r.as.number == 0) {
           return ERROR_DIVISION_BY_ZERO;
         }
-        vm_push(l/r);
+        vm_push(NUMBER_VAL(l.as.number/r.as.number));
         break;
       }
       case OP_DONE: return SUCCESS;
@@ -157,5 +173,5 @@ int main(int argc, char **argv) {
     return 1;
   }
   free(bytecode);
-  return vm_pop();
+  return vm_pop().as.number;
 }
