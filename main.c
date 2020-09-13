@@ -7,6 +7,7 @@
 #define STACK_MAX 256
 #define GLOBAL_MAX 256
 #define NUMBER_VAL(value) ((Value){ VAL_NUMBER, { .number = value } })
+#define BOOL_VAL(value) ((Value){ VAL_BOOL, { .boolean = value } })
 
 typedef enum {
   VAL_BOOL,
@@ -36,6 +37,10 @@ typedef enum {
   OP_MUL,
   OP_DIV,
   OP_DONE,
+  OP_EQ,
+  OP_NEQ,
+  OP_LESS,
+  OP_GREATER,
   LOAD_GLOBAL,
   STORE_GLOBAL,
 } opcode;
@@ -114,6 +119,46 @@ exec_result exec_interpret(uint8_t *bytecode) {
         vm_push(NUMBER_VAL(l.as.number/r.as.number));
         break;
       }
+      case OP_EQ: {
+        Value r = vm_pop();
+        Value l = vm_pop();
+        if (l.as.number-r.as.number == 0) {
+          vm_push(BOOL_VAL(true));
+          break;
+        }
+        vm_push(BOOL_VAL(false));
+        break;
+      }
+      case OP_NEQ: {
+        Value r = vm_pop();
+        Value l = vm_pop();
+        if (l.as.number-r.as.number == 0) {
+          vm_push(BOOL_VAL(false));
+          break;
+        }
+        vm_push(BOOL_VAL(true));
+        break;
+      }
+      case OP_LESS: {
+        Value r = vm_pop();
+        Value l = vm_pop();
+        if (r.as.number-l.as.number > 0) {
+          vm_push(BOOL_VAL(true));
+          break;
+        }
+        vm_push(BOOL_VAL(false));
+        break;
+      }
+      case OP_GREATER: {
+        Value r = vm_pop();
+        Value l = vm_pop();
+        if (l.as.number-r.as.number > 0) {
+          vm_push(BOOL_VAL(true));
+          break;
+        }
+        vm_push(BOOL_VAL(false));
+        break;
+      }
       case OP_DONE: return SUCCESS;
       case LOAD_GLOBAL: {
         uint8_t index = *vm.ip++;
@@ -173,5 +218,9 @@ int main(int argc, char **argv) {
     return 1;
   }
   free(bytecode);
-  return vm_pop().as.number;
+  Value val = vm_pop();
+  if (val.type == VAL_BOOL) {
+    return val.as.boolean;
+  }
+  return val.as.number;
 }
