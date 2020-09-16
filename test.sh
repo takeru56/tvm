@@ -65,6 +65,8 @@ assert '230<33' 0
 echo "## Variable Test"
 assert 'a=1 a+3' 4
 assert 'a = 3 b = 10 a*b' 30
+assert 'if 2 > 1 do b=1+1 end b=b+1 a = 1 a*b' 3
+
 echo "DONE"
 
 rm tvm

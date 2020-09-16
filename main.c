@@ -43,6 +43,7 @@ typedef enum {
   OP_GREATER,
   LOAD_GLOBAL,
   STORE_GLOBAL,
+  OP_JNT,
 } opcode;
 
 typedef enum exec_result {
@@ -169,6 +170,18 @@ exec_result exec_interpret(uint8_t *bytecode) {
         uint8_t index= *vm.ip++;
         vm.global[index] = vm_pop();
         vm_push(vm.global[index]);
+        break;
+      }
+      case OP_JNT: {
+        Value condition = vm_pop();
+        uint8_t upper = *vm.ip++;
+        uint8_t lower = *vm.ip++;
+        uint16_t jmp_count = decode_constant(upper, lower);
+        if (condition.as.boolean) {
+          break;
+        }
+
+        for (int i=0; i<jmp_count; i++) vm.ip++;
         break;
       }
       default:
