@@ -25,6 +25,7 @@ typedef struct {
 
 struct {
   uint8_t *ip;
+  uint8_t *bp;
   Value stack[STACK_MAX];
   Value global[GLOBAL_MAX];
   Value *stack_top;
@@ -75,14 +76,15 @@ uint8_t trans(unsigned char c){
 }
 
 uint16_t decode_constant(uint8_t upper, uint8_t lower) {
-  // bigendian
+  // big endian
   return 255*upper + lower;
 }
 
 exec_result exec_interpret(uint8_t *bytecode) {
   vm_init();
 
-  vm.ip = bytecode;
+  vm.bp = bytecode;
+  vm.ip = vm.bp;
   while(1) {
     uint8_t instruction = *vm.ip++;
     switch(instruction) {
@@ -167,7 +169,7 @@ exec_result exec_interpret(uint8_t *bytecode) {
         break;
       }
       case STORE_GLOBAL: {
-        uint8_t index= *vm.ip++;
+        uint8_t index = *vm.ip++;
         vm.global[index] = vm_pop();
         vm_push(vm.global[index]);
         break;
@@ -180,8 +182,7 @@ exec_result exec_interpret(uint8_t *bytecode) {
         if (condition.as.boolean) {
           break;
         }
-
-        for (int i=0; i<jmp_count; i++) vm.ip++;
+        vm.ip = vm.bp + jmp_count;
         break;
       }
       default:
