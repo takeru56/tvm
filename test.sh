@@ -6,7 +6,7 @@ assert() {
   expected=$2
 
   # compile to bytecode
-  go run ~/go/1.14.6/src/github.com/takeru56/t "$source" > out.tt
+  go run ../../go/1.14.6/src/github.com/takeru56/t "$source" > out.tt
   bytecode=$(<out.tt)
 
   # execute interpleter
@@ -28,7 +28,7 @@ not_eq() {
   expected=$2
 
   # compile to bytecode
-  go run ~/go/1.14.6/src/github.com/takeru56/t $source > out.tt
+  go run ../../go/1.14.6/src/github.com/takeru56/t $source > out.tt
   bytecode=$(<out.tt)
 
   # execute interpleter
@@ -68,8 +68,8 @@ assert 'a = 3 b = 10 a*b' 30
 assert 'a = 2 b = 3 if 1 > 2 do b = 5 end a*b' 6
 assert 'a = 1 if 2 > 1 do a=3 end a*3' 9
 assert 'a = 1 while 5 > a do a=a+1 end a' 5
-
 echo "DONE"
 
 rm tvm
 rm out.tt
+
