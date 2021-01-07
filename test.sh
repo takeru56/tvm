@@ -1,4 +1,5 @@
 #!/bin/sh
+compiler_path=../../../go/1.14.6/src/github.com/takeru56/t
 
 assert() {
   # arguments
@@ -6,7 +7,7 @@ assert() {
   expected=$2
 
   # compile to bytecode
-  go run ../../go/1.14.6/src/github.com/takeru56/t "$source" > out.tt
+  go run $compiler_path "$source" > out.tt
   bytecode=$(<out.tt)
 
   # execute interpleter
@@ -28,7 +29,7 @@ not_eq() {
   expected=$2
 
   # compile to bytecode
-  go run ../../go/1.14.6/src/github.com/takeru56/t $source > out.tt
+  go run $compiler_path $source > out.tt
   bytecode=$(<out.tt)
 
   # execute interpleter
@@ -72,4 +73,3 @@ echo "DONE"
 
 rm tvm
 rm out.tt
-
