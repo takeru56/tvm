@@ -1,5 +1,5 @@
 #!/bin/sh
-compiler_path=../../../go/1.14.6/src/github.com/takeru56/t
+compiler_path=../../../go/1.14.6/src/github.com/takeru56/tcompiler
 
 assert() {
   # arguments
