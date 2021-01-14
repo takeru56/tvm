@@ -6,6 +6,8 @@
 #include "opcode.h"
 
 #define STACK_MAX 256
+#define INST_MAX 100
+#define CONST_MAX 100
 #define GLOBAL_MAX 256
 #define NUMBER_VAL(value) ((Value){ VAL_NUMBER, { .number = value } })
 #define BOOL_VAL(value) ((Value){ VAL_BOOL, { .boolean = value } })
@@ -25,6 +27,23 @@ typedef struct {
     uint16_t number;
   } as;
 } Value;
+
+typedef enum {
+  CONST_INT,
+} constantType;
+
+typedef struct {
+  constantType type;
+  uint16_t size;
+  uint8_t* content;
+} Constant;
+
+typedef struct {
+  Constant* constants;
+  uint16_t constant_size;
+  uint8_t* instructions;
+  uint16_t instruction_size;
+} Bytecode;
 
 struct {
   uint8_t *ip;

@@ -2,7 +2,7 @@ CFLAGS=-std=c11 -g -static
 SRCS=$(wildcard *.c)
 OBJS=$(SRCS: .c=.o)
 
-tvm: main.c
+tvm: main.c vm.c vm.h
 				$(CC) -o tvm $(OBJS) $(LDFLAGS)
 
 test: tvm
