@@ -53,11 +53,18 @@ ExecResult exec_interpret(Bytecode b)
         uint8_t lower = *vm.ip++;
         uint16_t constant_index = decode_constant(upper, lower);
         Constant c = b.constants[constant_index-1];
-        if (c.type == CONST_INT) {
-          upper = *c.content++;
-          lower = *c.content;
-          uint16_t val = decode_constant(upper, lower);
-          vm_push(NUMBER_VAL(val));
+        switch(c.type) {
+          case CONST_INT: {
+            upper = *c.content++;
+            lower = *c.content;
+            uint16_t val = decode_constant(upper, lower);
+            vm_push(NUMBER_VAL(val));
+            break;
+          }
+          case CONST_FUNC: {
+            vm_push(FUNCTION_VAL(&c));
+            break;
+          }
         }
         break;
       }
@@ -204,18 +211,32 @@ Bytecode parse_bytecode(char* str)
       low = str[cnt++];
       pos++;
       uint8_t const_type = calc_byte(up, low);
+      up =  str[cnt++];
+      low = str[cnt++];
+      pos++;
+      uint8_t upper = calc_byte(up, low);
+      up =  str[cnt++];
+      low = str[cnt++];
+      pos++;
+      uint8_t lower = calc_byte(up, low);
+      uint16_t const_size = decode_constant(upper, lower);
+
       switch (const_type) {
         case CONST_INT: {
-          up =  str[cnt++];
-          low = str[cnt++];
-          pos++;
-          uint8_t upper = calc_byte(up, low);
-          up =  str[cnt++];
-          low = str[cnt++];
-          pos++;
-          uint8_t lower = calc_byte(up, low);
-          uint16_t const_size = decode_constant(upper, lower);
           uint8_t* content = (uint8_t *)malloc(2);
+          for (int j=0; j<const_size; j++) {
+            up =  str[cnt++];
+            low = str[cnt++];
+            pos++;
+            content[j] = calc_byte(up, low);
+          }
+          constants[i].type = const_type;
+          constants[i].size = const_size;
+          constants[i].content = content;
+          break;
+        }
+        case CONST_FUNC: {
+          uint8_t* content = (uint8_t *)malloc(INST_MAX);
           for (int j=0; j<const_size; j++) {
             up =  str[cnt++];
             low = str[cnt++];
@@ -260,10 +281,11 @@ Bytecode parse_bytecode(char* str)
 ExecResult tarto_vm_run(char* input)
 {
   Bytecode bytecode = parse_bytecode(input);
-  // printf("size: %d\n", bytecode.constant_size);
-  // printf("start\n");
+
+  // printf("const size: %d\n", bytecode.constant_size);
+  // printf("instruction\n");
   // for (int i=0; i<bytecode.instruction_size; i++) {
-  //   printf("content: %d\n", bytecode.instructions[i]);
+  //   printf("%d: %d\n", i, bytecode.instructions[i]);
   // }
   return exec_interpret(bytecode);
 }

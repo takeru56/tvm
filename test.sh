@@ -69,6 +69,8 @@ assert 'a = 3 b = 10 a*b' 30
 assert 'a = 2 b = 3 if 1 > 2 do b = 5 end a*b' 6
 assert 'a = 1 if 2 > 1 do a=3 end a*3' 9
 assert 'a = 1 while 5 > a do a=a+1 end a' 5
+echo "## Function Test"
+assert 'hoge=3 def myFunc() a = 1 while 5 > a do a=a+1 end end hoge' 3
 echo "DONE"
 
 rm tvm

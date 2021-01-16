@@ -12,36 +12,40 @@
 #define NUMBER_VAL(value) ((Value){ VAL_NUMBER, { .number = value } })
 #define BOOL_VAL(value) ((Value){ VAL_BOOL, { .boolean = value } })
 #define NIL_VAL() ((Value){.type = VAL_NIL})
+#define FUNCTION_VAL(value) ((Value){VAL_FUNCTION, { .function = value}})
 #define EXEC_RESULT(type, value) ((ExecResult){type, value})
 
 typedef enum {
   VAL_BOOL,
   VAL_NIL,
   VAL_NUMBER,
+  VAL_FUNCTION,
 } valueType;
+
+typedef enum {
+  CONST_INT,
+  CONST_FUNC,
+} constantType;
+
+typedef struct {
+  constantType type;
+  uint16_t size;
+  uint8_t *content;
+} Constant;
 
 typedef struct {
   valueType type;
   union {
     bool boolean;
     uint16_t number;
+    Constant *function;
   } as;
 } Value;
 
-typedef enum {
-  CONST_INT,
-} constantType;
-
 typedef struct {
-  constantType type;
-  uint16_t size;
-  uint8_t* content;
-} Constant;
-
-typedef struct {
-  Constant* constants;
+  Constant *constants;
   uint16_t constant_size;
-  uint8_t* instructions;
+  uint8_t *instructions;
   uint16_t instruction_size;
 } Bytecode;
 
