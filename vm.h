@@ -3,17 +3,36 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdbool.h>
-#include "opcode.h"
 
 #define STACK_MAX 256
 #define INST_MAX 100
 #define CONST_MAX 100
 #define GLOBAL_MAX 256
+#define FRAME_MAX 10
 #define NUMBER_VAL(value) ((Value){ VAL_NUMBER, { .number = value } })
 #define BOOL_VAL(value) ((Value){ VAL_BOOL, { .boolean = value } })
 #define NIL_VAL() ((Value){.type = VAL_NIL})
 #define FUNCTION_VAL(value) ((Value){VAL_FUNCTION, { .function = value}})
 #define EXEC_RESULT(type, value) ((ExecResult){type, value})
+
+typedef enum {
+  OP_CONSTANT,
+  OP_ADD,
+  OP_SUB,
+  OP_MUL,
+  OP_DIV,
+  OP_DONE,
+  OP_EQ,
+  OP_NEQ,
+  OP_LESS,
+  OP_GREATER,
+  OP_LOAD_GLOBAL,
+  OP_STORE_GLOBAL,
+  OP_JNT,
+  OP_JMP,
+  OP_CALL,
+  OP_RETURN,
+} opcode;
 
 typedef enum {
   VAL_BOOL,
@@ -38,9 +57,16 @@ typedef struct {
   union {
     bool boolean;
     uint16_t number;
-    Constant *function;
+    Constant function;
   } as;
 } Value;
+
+
+typedef struct {
+  uint16_t instruction_size;
+  uint8_t *instructions;
+  int ip;
+} Frame;
 
 typedef struct {
   Constant *constants;
@@ -50,17 +76,18 @@ typedef struct {
 } Bytecode;
 
 struct {
-  uint8_t *ip;
-  uint8_t *bp;
   Value stack[STACK_MAX];
   Value global[GLOBAL_MAX];
   Value *stack_top;
+  Frame frames[FRAME_MAX];
+  uint8_t frame_index;
 } vm;
 
 typedef enum {
   SUCCESS,
   ERROR_DIVISION_BY_ZERO,
   ERROR_UNKNOWN_OPCODE,
+  ERROR_OTHER,
 } resultType;
 
 typedef struct {

@@ -65,12 +65,26 @@ assert '1>300' 0
 assert '230<33' 0
 echo "## Variable Test"
 assert 'a=1 a+3' 4
-assert 'a = 3 b = 10 a*b' 30
+assert '1*2' 2
+assert 'a=1 b=2 3+a*b' 5
 assert 'a = 2 b = 3 if 1 > 2 do b = 5 end a*b' 6
 assert 'a = 1 if 2 > 1 do a=3 end a*3' 9
 assert 'a = 1 while 5 > a do a=a+1 end a' 5
 echo "## Function Test"
 assert 'hoge=3 def myFunc() a = 1 while 5 > a do a=a+1 end end hoge' 3
+assert 'def myFunc() a = 1 b=2 return 3+a*b end myFunc()' 5
+assert 'def myFunc() a = 1 b=2 return 3+a*b end 2 * myFunc()' 10
+assert '
+def hoge()
+  return 1+1
+end
+
+def fuga()
+  return 2+2-hoge()
+end
+
+return hoge()+fuga()*3' 8
+
 echo "DONE"
 
 rm tvm

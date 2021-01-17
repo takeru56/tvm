@@ -1,9 +1,35 @@
 #include "vm.h"
 
-void vm_init()
+Frame pop_frame()
 {
-  vm = (typeof(vm)){NULL};
+  vm.frame_index--;
+  return vm.frames[vm.frame_index];
+}
+
+Frame *current_frame()
+{
+  return &vm.frames[vm.frame_index-1];
+}
+
+void push_frame(Frame frame)
+{
+  vm.frames[vm.frame_index] = frame;
+  vm.frame_index++;
+}
+
+
+Frame new_frame(uint16_t ins_size, uint8_t* ins)
+{
+  Frame frame = {ins_size, ins, -1};
+  return frame;
+}
+
+void vm_init(Bytecode b)
+{
   vm.stack_top = vm.stack;
+  Frame main = new_frame(b.instruction_size, b.instructions);
+  vm.frames[0] = main;
+  vm.frame_index = 1;
 }
 
 void vm_push(Value value)
@@ -40,17 +66,20 @@ uint16_t decode_constant(uint8_t upper, uint8_t lower)
 
 ExecResult exec_interpret(Bytecode b)
 {
-  vm_init();
+  vm_init(b);
 
-  vm.bp = b.instructions;
-  vm.ip = vm.bp;
-  bool f = true;
-  while(f) {
-    uint8_t instruction = *vm.ip++;
-    switch(instruction) {
+  while(current_frame()->ip < current_frame()->instruction_size - 1) {
+    current_frame()->ip++;
+
+    uint8_t* ins = current_frame()->instructions;
+    uint16_t ip = current_frame()->ip;
+    uint8_t op = ins[ip];
+
+    switch(op) {
       case OP_CONSTANT: {
-        uint8_t upper = *vm.ip++;
-        uint8_t lower = *vm.ip++;
+        uint8_t upper = ins[ip+1];
+        uint8_t lower = ins[ip+2];
+        current_frame()->ip += 2;
         uint16_t constant_index = decode_constant(upper, lower);
         Constant c = b.constants[constant_index-1];
         switch(c.type) {
@@ -62,7 +91,7 @@ ExecResult exec_interpret(Bytecode b)
             break;
           }
           case CONST_FUNC: {
-            vm_push(FUNCTION_VAL(&c));
+            vm_push(FUNCTION_VAL(c));
             break;
           }
         }
@@ -136,43 +165,56 @@ ExecResult exec_interpret(Bytecode b)
         break;
       }
       case OP_DONE: {
-        f = false;
         break;
       }
       case OP_LOAD_GLOBAL: {
-        uint8_t index = *vm.ip++;
+        uint8_t index = ins[++current_frame()->ip];
         vm_push(vm.global[index]);
         break;
       }
       case OP_STORE_GLOBAL: {
-        uint8_t index = *vm.ip++;
+        current_frame()->ip++;
+        uint8_t index = ins[current_frame()->ip];
         vm.global[index] = vm_pop();
-        vm_push(vm.global[index]);
+        // vm_push(vm.global[index]);
         break;
       }
       case OP_JNT: {
         Value condition = vm_pop();
-        uint8_t upper = *vm.ip++;
-        uint8_t lower = *vm.ip++;
+        uint8_t upper = ins[++current_frame()->ip];
+        uint8_t lower = ins[++current_frame()->ip];
         uint16_t jmp_offset = decode_constant(upper, lower);
         if (condition.as.boolean) {
           break;
         }
-        vm.ip = vm.bp + jmp_offset;
+        current_frame()->ip = jmp_offset-1;
         break;
       }
       case OP_JMP: {
-        uint8_t upper = *vm.ip++;
-        uint8_t lower = *vm.ip++;
+        uint8_t upper = ins[++current_frame()->ip];
+        uint8_t lower = ins[++current_frame()->ip];
         uint16_t jmp_offset = decode_constant(upper, lower);
-        vm.ip = vm.bp + jmp_offset;
+        current_frame()->ip = jmp_offset-1;
+        break;
+      }
+      case OP_CALL: {
+        current_frame()->ip++;
+        Value constant = vm.global[ins[current_frame()->ip]];
+        if (constant.as.function.type != CONST_FUNC) return EXEC_RESULT(ERROR_OTHER, NIL_VAL());
+        push_frame(new_frame(constant.as.function.size, constant.as.function.content));
+        break;
+      }
+      case OP_RETURN: {
+        Value val = vm_pop();
+        pop_frame();
+        // vm_pop(); // pop function
+        vm_push(val);
         break;
       }
       default:
         return EXEC_RESULT(ERROR_UNKNOWN_OPCODE, NIL_VAL());
     }
   }
-
   Value val = vm_pop();
   return EXEC_RESULT(SUCCESS, val);
 }
@@ -282,10 +324,20 @@ ExecResult tarto_vm_run(char* input)
 {
   Bytecode bytecode = parse_bytecode(input);
 
-  // printf("const size: %d\n", bytecode.constant_size);
-  // printf("instruction\n");
+  // for debug
+  // printf("** instruction**\n");
   // for (int i=0; i<bytecode.instruction_size; i++) {
   //   printf("%d: %d\n", i, bytecode.instructions[i]);
   // }
+
+  // printf("** constant **\n");
+  // for (int i=0; i<bytecode.constant_size; i++) {
+  //   printf("const: %d\n", i+1);
+  //   printf("type: %d\n", bytecode.constants[i].type);
+  //    for (int j=0; j<bytecode.constants[i].size; j++) {
+  //      printf("%d: %d\n", j, bytecode.constants[i].content[j]);
+  //    }
+  // }
+
   return exec_interpret(bytecode);
 }
