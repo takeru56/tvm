@@ -5,13 +5,12 @@ assert() {
   # arguments
   source=$1
   expected=$2
-
   # compile to bytecode
-  go run $compiler_path "$source" > out.tt
-  bytecode=$(<out.tt)
+  go run $compiler_path "$source" > test.ir
+  bytecode=$(<test.ir)
 
   # execute interpleter
-  ./tvm "$bytecode"
+  ./tvm
   actual=$?
 
   # output results
@@ -29,11 +28,11 @@ not_eq() {
   expected=$2
 
   # compile to bytecode
-  go run $compiler_path $source > out.tt
-  bytecode=$(<out.tt)
+  go run $compiler_path $source > test.ir
+  bytecode=$(<test.ir)
 
   # execute interpleter
-  ./tvm "$bytecode"
+  ./tvm
   actual=$?
 
   # output results
@@ -49,7 +48,7 @@ not_eq() {
 make tvm
 
 echo "# TESTCASES"
-echo "## Calculator Test"
+# echo "## Calculator Test"
 assert '1+1' 2
 assert '255+0' 255
 assert '255-254' 1
@@ -69,7 +68,8 @@ assert '1*2' 2
 assert 'a=1 b=2 3+a*b' 5
 assert 'a = 2 b = 3 if 1 > 2 do b = 5 end a*b' 6
 assert 'a = 1 if 2 > 1 do a=3 end a*3' 9
-assert 'a = 1 while 5 > a do a=a+1 end a' 5
+assert 'a = 1 if 4 > a do a = a+1 end if 2 > 1 do a=a+3 end a*3' 15
+# assert 'a = 1 while 5 > a do a=a+1 end a' 5
 echo "## Function Test"
 assert 'hoge=3 def myFunc() a = 1 while 5 > a do a=a+1 end end hoge' 3
 assert 'def myFunc() a = 1 b=2 return 3+a*b end myFunc()' 5
@@ -84,8 +84,28 @@ def fuga()
 end
 
 return hoge()+fuga()*3' 8
+assert '
+def sum(a, b)
+  return a+b
+end
+
+sum(3,6)' 9
+
+assert '
+def fibo(a)
+  if a == 0 do
+    return 0
+  end
+  if a == 1 do
+    return 1
+  end
+  return fibo(a-1)+fibo(a-2)
+end
+
+fibo(10)' 55
+
 
 echo "DONE"
 
 rm tvm
-rm out.tt
+

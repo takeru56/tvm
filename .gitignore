@@ -1,3 +1,7 @@
 tvm
 main
 a.out
+*.dSYM
+*.tt
+*.trt
+*.ir

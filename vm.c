@@ -1,33 +1,37 @@
 #include "vm.h"
 
-Frame pop_frame()
-{
-  vm.frame_index--;
-  return vm.frames[vm.frame_index];
-}
-
 Frame *current_frame()
 {
   return &vm.frames[vm.frame_index-1];
 }
 
+Frame pop_frame()
+{
+  vm.stack_top = current_frame()->bp;
+  vm.frame_index--;
+  return vm.frames[vm.frame_index];
+}
+
 void push_frame(Frame frame)
 {
+  frame.bp = vm.stack_top-frame.arg_num;
   vm.frames[vm.frame_index] = frame;
   vm.frame_index++;
 }
 
 
-Frame new_frame(uint16_t ins_size, uint8_t* ins)
+Frame new_frame(uint16_t ins_size, uint8_t* ins, uint8_t arg_num)
 {
   Frame frame = {ins_size, ins, -1};
+  frame.arg_num =  arg_num;
   return frame;
 }
 
 void vm_init(Bytecode b)
 {
   vm.stack_top = vm.stack;
-  Frame main = new_frame(b.instruction_size, b.instructions);
+  Frame main = new_frame(b.instruction_size, b.instructions, 0);
+  main.bp = vm.stack_top;
   vm.frames[0] = main;
   vm.frame_index = 1;
 }
@@ -70,8 +74,8 @@ ExecResult exec_interpret(Bytecode b)
 
   while(current_frame()->ip < current_frame()->instruction_size - 1) {
     current_frame()->ip++;
-
     uint8_t* ins = current_frame()->instructions;
+
     uint16_t ip = current_frame()->ip;
     uint8_t op = ins[ip];
 
@@ -84,10 +88,10 @@ ExecResult exec_interpret(Bytecode b)
         Constant c = b.constants[constant_index-1];
         switch(c.type) {
           case CONST_INT: {
-            upper = *c.content++;
-            lower = *c.content;
-            uint16_t val = decode_constant(upper, lower);
-            vm_push(NUMBER_VAL(val));
+            upper = c.content[0];
+            lower = c.content[1];
+            uint16_t num = decode_constant(upper, lower);
+            vm_push(NUMBER_VAL(num));
             break;
           }
           case CONST_FUNC: {
@@ -176,7 +180,6 @@ ExecResult exec_interpret(Bytecode b)
         current_frame()->ip++;
         uint8_t index = ins[current_frame()->ip];
         vm.global[index] = vm_pop();
-        // vm_push(vm.global[index]);
         break;
       }
       case OP_JNT: {
@@ -198,17 +201,37 @@ ExecResult exec_interpret(Bytecode b)
         break;
       }
       case OP_CALL: {
-        current_frame()->ip++;
-        Value constant = vm.global[ins[current_frame()->ip]];
+        int8_t arg_num = ins[++current_frame()->ip];
+        Value constant = *(vm.stack_top-arg_num-1);
+
         if (constant.as.function.type != CONST_FUNC) return EXEC_RESULT(ERROR_OTHER, NIL_VAL());
-        push_frame(new_frame(constant.as.function.size, constant.as.function.content));
+        push_frame(new_frame(constant.as.function.size, constant.as.function.content, arg_num));
         break;
       }
       case OP_RETURN: {
         Value val = vm_pop();
         pop_frame();
-        // vm_pop(); // pop function
+        vm_pop(); // pop function
         vm_push(val);
+        break;
+      }
+      case OP_LOAD_LOCAL: {
+        uint8_t index = ins[++current_frame()->ip];
+        if (index < current_frame()->arg_num) {
+          Value arg_val = current_frame()->bp[index];
+          vm_push(arg_val);
+          break;
+        }
+        vm_push(current_frame()->local[index]);
+        break;
+      }
+      case OP_STORE_LOCAL: {
+        uint8_t index = ins[++current_frame()->ip];
+        if (index < current_frame()->arg_num) {
+          current_frame()->bp[index] = vm_pop();
+          break;
+        }
+        current_frame()->local[index] = vm_pop();
         break;
       }
       default:
@@ -221,9 +244,9 @@ ExecResult exec_interpret(Bytecode b)
 
 Bytecode parse_bytecode(char* str)
 {
-  Bytecode b;
-  Constant* constants = (Constant *)malloc(CONST_MAX);
-  uint8_t*  instructions = (uint8_t *)malloc(INST_MAX);
+  Bytecode bcode;
+  uint8_t* insts = calloc(sizeof(uint8_t), INST_MAX);
+  Constant* constants = calloc(sizeof(Constant), CONST_MAX);
   // if(!bytecode) {
   // }
   // if(!constants) {
@@ -236,6 +259,7 @@ Bytecode parse_bytecode(char* str)
     uint8_t up =  str[cnt++];
     uint8_t low = str[cnt++];
     uint8_t b = calc_byte(up, low);
+    uint8_t* content;
     pos++;
 
     // skip magic number
@@ -262,40 +286,34 @@ Bytecode parse_bytecode(char* str)
       pos++;
       uint8_t lower = calc_byte(up, low);
       uint16_t const_size = decode_constant(upper, lower);
-
       switch (const_type) {
         case CONST_INT: {
-          uint8_t* content = (uint8_t *)malloc(2);
+          content = calloc(sizeof(uint8_t), 2);
           for (int j=0; j<const_size; j++) {
             up =  str[cnt++];
             low = str[cnt++];
             pos++;
             content[j] = calc_byte(up, low);
           }
-          constants[i].type = const_type;
-          constants[i].size = const_size;
-          constants[i].content = content;
           break;
         }
         case CONST_FUNC: {
-          uint8_t* content = (uint8_t *)malloc(INST_MAX);
+          content = calloc(sizeof(uint8_t), INST_MAX);
           for (int j=0; j<const_size; j++) {
             up =  str[cnt++];
             low = str[cnt++];
             pos++;
             content[j] = calc_byte(up, low);
           }
-          constants[i].type = const_type;
-          constants[i].size = const_size;
-          constants[i].content = content;
           break;
         }
       }
+      constants[i].type = const_type;
+      constants[i].size = const_size;
+      constants[i].content = content;
     }
     break;
   }
-  b.constants = constants;
-  b.constant_size = constant_pool_size;
 
   // parse instructions
   uint8_t up =  str[cnt++];
@@ -312,12 +330,14 @@ Bytecode parse_bytecode(char* str)
     uint8_t up =  str[cnt++];
     uint8_t low = str[cnt++];
     pos++;
-    instructions[i] = calc_byte(up, low);
+    insts[i] = calc_byte(up, low);
   }
-  b.instruction_size = inst_size;
-  b.instructions = instructions;
 
-  return b;
+  bcode.instruction_size = inst_size;
+  bcode.instructions = insts;
+  bcode.constants = constants;
+  bcode.constant_size = constant_pool_size;
+  return bcode;
 }
 
 ExecResult tarto_vm_run(char* input)
@@ -329,15 +349,8 @@ ExecResult tarto_vm_run(char* input)
   // for (int i=0; i<bytecode.instruction_size; i++) {
   //   printf("%d: %d\n", i, bytecode.instructions[i]);
   // }
-
-  // printf("** constant **\n");
-  // for (int i=0; i<bytecode.constant_size; i++) {
-  //   printf("const: %d\n", i+1);
-  //   printf("type: %d\n", bytecode.constants[i].type);
-  //    for (int j=0; j<bytecode.constants[i].size; j++) {
-  //      printf("%d: %d\n", j, bytecode.constants[i].content[j]);
-  //    }
-  // }
-
-  return exec_interpret(bytecode);
+  ExecResult er = exec_interpret(bytecode);
+  free(bytecode.constants);
+  free(bytecode.instructions);
+  return er;
 }

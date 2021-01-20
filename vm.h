@@ -8,7 +8,9 @@
 #define INST_MAX 100
 #define CONST_MAX 100
 #define GLOBAL_MAX 256
-#define FRAME_MAX 10
+#define LOCAL_MAX 10
+#define FRAME_MAX 20
+#define IR_MAX 300
 #define NUMBER_VAL(value) ((Value){ VAL_NUMBER, { .number = value } })
 #define BOOL_VAL(value) ((Value){ VAL_BOOL, { .boolean = value } })
 #define NIL_VAL() ((Value){.type = VAL_NIL})
@@ -32,6 +34,8 @@ typedef enum {
   OP_JMP,
   OP_CALL,
   OP_RETURN,
+  OP_LOAD_LOCAL,
+	OP_STORE_LOCAL,
 } opcode;
 
 typedef enum {
@@ -61,11 +65,13 @@ typedef struct {
   } as;
 } Value;
 
-
 typedef struct {
   uint16_t instruction_size;
   uint8_t *instructions;
   int ip;
+  Value local[LOCAL_MAX];
+  uint8_t arg_num;
+  Value *bp;
 } Frame;
 
 typedef struct {
