@@ -1,0 +1,21 @@
+{
+  "tasks": [
+    {
+      "type": "shell",
+      "label": "debug",
+      "command": "gcc",
+      "args": [
+        "-g",
+        "-o",
+        "tvm",
+        "vm.c",
+        "main.c"
+      ],
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      }
+    }
+  ],
+  "version": "2.0.0"
+}
