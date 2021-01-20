@@ -10,7 +10,7 @@ int main(int argc, char **argv) {
   char ir[IR_MAX];
   FILE *fp;
 
-  fp = fopen("out.tt", "r");
+  fp = fopen("test.ir", "r");
   fscanf(fp, "%s", ir);
 
   ExecResult result = tarto_vm_run(ir);

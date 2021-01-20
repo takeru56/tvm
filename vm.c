@@ -90,8 +90,7 @@ ExecResult exec_interpret(Bytecode b)
           case CONST_INT: {
             upper = c.content[0];
             lower = c.content[1];
-            uint16_t num = decode_constant(upper, lower);
-            vm_push(NUMBER_VAL(num));
+            vm_push(NUMBER_VAL(decode_constant(upper, lower)));
             break;
           }
           case CONST_FUNC: {
