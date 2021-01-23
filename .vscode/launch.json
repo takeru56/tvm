@@ -6,7 +6,7 @@
   "configurations": [
     {
       "name": "(LLDB) Launch",
-      "type": "cppdbg",
+      "type": "C-dbg",
       "request": "launch",
       "program": "${fileDirname}/tvm",
       "args": ["${fileDirname}/test.ir"],

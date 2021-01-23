@@ -104,6 +104,19 @@ end
 
 fibo(10)' 55
 
+assert '
+class LED
+  def on()
+  end
+
+  def off()
+  end
+end
+
+a = 3
+a
+' 3
+
 
 echo "DONE"
 

@@ -244,85 +244,145 @@ ExecResult exec_interpret(Bytecode b)
 Bytecode parse_bytecode(char* str)
 {
   Bytecode bcode;
+  uint8_t *content;
   uint8_t* insts = calloc(sizeof(uint8_t), INST_MAX);
   Constant* constants = calloc(sizeof(Constant), CONST_MAX);
-  // if(!bytecode) {
-  // }
-  // if(!constants) {
-  // }
-  int p = 0, cnt = 0, pos = 0;
-  uint16_t constant_pool_size = 0;
+  int p = 0;
+  int cnt = 0;
+  int pos = 0;
 
-  // parse constants
-  while (cnt < strlen(str)){
-    uint8_t up =  str[cnt++];
-    uint8_t low = str[cnt++];
-    uint8_t b = calc_byte(up, low);
-    uint8_t* content;
+
+  // u4 skip magic number
+  for (int i=0; i<4; i++) {
+    cnt += 2;
     pos++;
+  }
 
-    // skip magic number
-    if (pos <= 4) continue;
-    // parse constant_pool_count
-    if (pos == 5) {
+  // u1 parse class_pool_count
+  uint8_t up =  str[cnt++];
+  uint8_t low = str[cnt++];
+  uint8_t class_pool_size = calc_byte(up, low);
+
+  // parse class pool
+  for (int i=0; i<class_pool_size; i++) {
+    up =  str[cnt++];
+    low = str[cnt++];
+    uint8_t upper = calc_byte(up, low);
+    pos++;
+    up =  str[cnt++];
+    low = str[cnt++];
+    pos++;
+    uint8_t lower= calc_byte(up, low);
+    uint8_t class_constant_pool_size = decode_constant(upper, lower);
+    Constant* class_constants = calloc(sizeof(Constant), CONST_MAX);
+
+    // parse class constant pool
+    for (int j=0; j<class_constant_pool_size; j++) {
       up =  str[cnt++];
       low = str[cnt++];
       pos++;
-      constant_pool_size = decode_constant(b, calc_byte(up, low));
-    }
-    // parse content
-    for (int i=0; i<constant_pool_size; i++) {
+      uint8_t class_const_type = calc_byte(up, low);
       up =  str[cnt++];
       low = str[cnt++];
       pos++;
-      uint8_t const_type = calc_byte(up, low);
+      upper = calc_byte(up, low);
       up =  str[cnt++];
       low = str[cnt++];
       pos++;
-      uint8_t upper = calc_byte(up, low);
-      up =  str[cnt++];
-      low = str[cnt++];
-      pos++;
-      uint8_t lower = calc_byte(up, low);
-      uint16_t const_size = decode_constant(upper, lower);
-      switch (const_type) {
+      lower = calc_byte(up, low);
+      uint16_t class_const_size = decode_constant(upper, lower);
+      switch (class_const_type) {
         case CONST_INT: {
           content = calloc(sizeof(uint8_t), 2);
-          for (int j=0; j<const_size; j++) {
+          for (int k=0; k<class_const_size; k++) {
             up =  str[cnt++];
             low = str[cnt++];
             pos++;
-            content[j] = calc_byte(up, low);
+            content[k] = calc_byte(up, low);
           }
           break;
         }
         case CONST_FUNC: {
           content = calloc(sizeof(uint8_t), INST_MAX);
-          for (int j=0; j<const_size; j++) {
+          for (int k=0; k<class_const_size; k++) {
             up =  str[cnt++];
             low = str[cnt++];
             pos++;
-            content[j] = calc_byte(up, low);
+            content[k] = calc_byte(up, low);
           }
           break;
         }
       }
-      constants[i].type = const_type;
-      constants[i].size = const_size;
-      constants[i].content = content;
+      class_constants[j].type = class_const_type;
+      class_constants[j].size = class_const_size;
+      class_constants[j].content = content;
     }
-    break;
+    bcode.classes[i].constant_size = class_constant_pool_size;
+    bcode.classes[i].constants = class_constants;
   }
 
-  // parse instructions
-  uint8_t up =  str[cnt++];
-  uint8_t low = str[cnt++];
-  pos++;
+  // parse constant_pool_count
+  up =  str[cnt++];
+  low = str[cnt++];
   uint8_t upper = calc_byte(up, low);
+  pos++;
   up =  str[cnt++];
   low = str[cnt++];
   pos++;
-  uint8_t lower = calc_byte(up, low);
+  uint8_t lower= calc_byte(up, low);
+  uint8_t constant_pool_size = decode_constant(upper, lower);
+
+  // parse content
+  for (int i=0; i<constant_pool_size; i++) {
+    up =  str[cnt++];
+    low = str[cnt++];
+    pos++;
+    uint8_t const_type = calc_byte(up, low);
+    up =  str[cnt++];
+    low = str[cnt++];
+    pos++;
+    upper = calc_byte(up, low);
+    up =  str[cnt++];
+    low = str[cnt++];
+    pos++;
+    lower = calc_byte(up, low);
+    uint16_t const_size = decode_constant(upper, lower);
+    switch (const_type) {
+      case CONST_INT: {
+        content = calloc(sizeof(uint8_t), 2);
+        for (int j=0; j<const_size; j++) {
+          up =  str[cnt++];
+          low = str[cnt++];
+          pos++;
+          content[j] = calc_byte(up, low);
+        }
+        break;
+      }
+      case CONST_FUNC: {
+        content = calloc(sizeof(uint8_t), INST_MAX);
+        for (int j=0; j<const_size; j++) {
+          up =  str[cnt++];
+          low = str[cnt++];
+          pos++;
+          content[j] = calc_byte(up, low);
+        }
+        break;
+      }
+    }
+    constants[i].type = const_type;
+    constants[i].size = const_size;
+    constants[i].content = content;
+  }
+
+  // parse instructions
+  up =  str[cnt++];
+  low = str[cnt++];
+  pos++;
+  upper = calc_byte(up, low);
+  up =  str[cnt++];
+  low = str[cnt++];
+  pos++;
+  lower = calc_byte(up, low);
   uint16_t inst_size = decode_constant(upper, lower);
   // parse content
   for (int i=0; i<inst_size; i++) {

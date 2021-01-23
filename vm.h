@@ -4,6 +4,7 @@
 #include <string.h>
 #include <stdbool.h>
 
+#define CLASS_MAX 10
 #define STACK_MAX 256
 #define INST_MAX 100
 #define CONST_MAX 100
@@ -75,6 +76,13 @@ typedef struct {
 } Frame;
 
 typedef struct {
+  uint16_t constant_size;
+  Constant *constants;
+} Class;
+
+
+typedef struct {
+  Class classes[CLASS_MAX];
   Constant *constants;
   uint16_t constant_size;
   uint8_t *instructions;
