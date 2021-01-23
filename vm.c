@@ -234,9 +234,10 @@ ExecResult exec_interpret(Bytecode b)
         break;
       }
       case OP_INSTANECE: {
-        uint8_t class_index = ins[ip+1]-1;
-        Class c = b.classes[class_index-1];
-        vm_push(INSTANCE_VAL(INSTANCE(&c)));
+        uint8_t class_index = ins[++current_frame()->ip];
+        Class c = b.classes[class_index];
+        vm_push(INSTANCE_VAL(INSTANCE(&c, class_index)));
+        break;
       }
       default:
         return EXEC_RESULT(ERROR_UNKNOWN_OPCODE, NIL_VAL());
@@ -407,13 +408,14 @@ Bytecode parse_bytecode(char* str)
 
 ExecResult tarto_vm_run(char* input)
 {
-  Bytecode bytecode = parse_bytecode(input);
+    Bytecode bytecode = parse_bytecode(input);
 
   // for debug
   // printf("** instruction**\n");
   // for (int i=0; i<bytecode.instruction_size; i++) {
   //   printf("%d: %d\n", i, bytecode.instructions[i]);
   // }
+
   ExecResult er = exec_interpret(bytecode);
   free(bytecode.constants);
   free(bytecode.instructions);

@@ -17,7 +17,7 @@
 #define NIL_VAL() ((Value){.type = VAL_NIL})
 #define FUNCTION_VAL(value) ((Value){VAL_FUNCTION, { .function = value}})
 #define INSTANCE_VAL(value) ((Value){VAL_INSTANCE, { .instance = value}})
-#define INSTANCE(value) ((Instance){value})
+#define INSTANCE(value, index) ((Instance){value, index})
 #define EXEC_RESULT(type, value) ((ExecResult){type, value})
 
 typedef enum {
@@ -69,6 +69,7 @@ typedef struct {
 
 typedef struct {
   Class *class;
+  uint8_t index;
 } Instance;
 
 typedef struct {

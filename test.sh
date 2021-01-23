@@ -49,31 +49,31 @@ make tvm
 
 echo "# TESTCASES"
 # echo "## Calculator Test"
-assert '1+1' 2
-assert '255+0' 255
-assert '255-254' 1
-assert '16*10' 160
-assert '65025/65025' 1
-assert '1==1' 1
-assert '1!=1' 0
-not_eq '1==1' 0
-not_eq '1!=1' 1
-assert '2>1' 1
-assert '1<2' 1
-assert '1>300' 0
-assert '230<33' 0
-echo "## Variable Test"
-assert 'a=1 a+3' 4
-assert '1*2' 2
-assert 'a=1 b=2 3+a*b' 5
-assert 'a = 2 b = 3 if 1 > 2 do b = 5 end a*b' 6
-assert 'a = 1 if 2 > 1 do a=3 end a*3' 9
-assert 'a = 1 if 4 > a do a = a+1 end if 2 > 1 do a=a+3 end a*3' 15
-# assert 'a = 1 while 5 > a do a=a+1 end a' 5
-echo "## Function Test"
-assert 'hoge=3 def myFunc() a = 1 while 5 > a do a=a+1 end end hoge' 3
-assert 'def myFunc() a = 1 b=2 return 3+a*b end myFunc()' 5
-assert 'def myFunc() a = 1 b=2 return 3+a*b end 2 * myFunc()' 10
+# assert '1+1' 2
+# assert '255+0' 255
+# assert '255-254' 1
+# assert '16*10' 160
+# assert '65025/65025' 1
+# assert '1==1' 1
+# assert '1!=1' 0
+# not_eq '1==1' 0
+# not_eq '1!=1' 1
+# assert '2>1' 1
+# assert '1<2' 1
+# assert '1>300' 0
+# assert '230<33' 0
+# echo "## Variable Test"
+# assert 'a=1 a+3' 4
+# assert '1*2' 2
+# assert 'a=1 b=2 3+a*b' 5
+# assert 'a = 2 b = 3 if 1 > 2 do b = 5 end a*b' 6
+# assert 'a = 1 if 2 > 1 do a=3 end a*3' 9
+# assert 'a = 1 if 4 > a do a = a+1 end if 2 > 1 do a=a+3 end a*3' 15
+# # assert 'a = 1 while 5 > a do a=a+1 end a' 5
+# echo "## Function Test"
+# assert 'hoge=3 def myFunc() a = 1 while 5 > a do a=a+1 end end hoge' 3
+# assert 'def myFunc() a = 1 b=2 return 3+a*b end myFunc()' 5
+# assert 'def myFunc() a = 1 b=2 return 3+a*b end 2 * myFunc()' 10
 assert '
 def hoge()
   return 1+1
@@ -110,6 +110,8 @@ class Motor
   end
 end
 
+a = Motor()
+
 class LED
   def on()
   end
@@ -117,8 +119,10 @@ class LED
   def off()
   end
 end
-LED()
-' 1
+
+b = LED()
+c = Motor()
+c' 0
 
 echo "DONE"
 

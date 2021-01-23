@@ -32,7 +32,7 @@ int main(int argc, char **argv) {
       break;
     }
     case VAL_INSTANCE: {
-      return val.as.instance.class->index;
+      return val.as.instance.index;
       break;
     }
     default: {
