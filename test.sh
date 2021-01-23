@@ -49,73 +49,73 @@ make tvm
 
 echo "# TESTCASES"
 # echo "## Calculator Test"
-# assert '1+1' 2
-# assert '255+0' 255
-# assert '255-254' 1
-# assert '16*10' 160
-# assert '65025/65025' 1
-# assert '1==1' 1
-# assert '1!=1' 0
-# not_eq '1==1' 0
-# not_eq '1!=1' 1
-# assert '2>1' 1
-# assert '1<2' 1
-# assert '1>300' 0
-# assert '230<33' 0
-# echo "## Variable Test"
-# assert 'a=1 a+3' 4
-# assert '1*2' 2
-# assert 'a=1 b=2 3+a*b' 5
-# assert 'a = 2 b = 3 if 1 > 2 do b = 5 end a*b' 6
-# assert 'a = 1 if 2 > 1 do a=3 end a*3' 9
-# assert 'a = 1 if 4 > a do a = a+1 end if 2 > 1 do a=a+3 end a*3' 15
-# # assert 'a = 1 while 5 > a do a=a+1 end a' 5
-# echo "## Function Test"
-# assert 'hoge=3 def myFunc() a = 1 while 5 > a do a=a+1 end end hoge' 3
-# assert 'def myFunc() a = 1 b=2 return 3+a*b end myFunc()' 5
-# assert 'def myFunc() a = 1 b=2 return 3+a*b end 2 * myFunc()' 10
-# assert '
-# def hoge()
-#   return 1+1
-# end
+assert '1+1' 2
+assert '255+0' 255
+assert '255-254' 1
+assert '16*10' 160
+assert '65025/65025' 1
+assert '1==1' 1
+assert '1!=1' 0
+not_eq '1==1' 0
+not_eq '1!=1' 1
+assert '2>1' 1
+assert '1<2' 1
+assert '1>300' 0
+assert '230<33' 0
+echo "## Variable Test"
+assert 'a=1 a+3' 4
+assert '1*2' 2
+assert 'a=1 b=2 3+a*b' 5
+assert 'a = 2 b = 3 if 1 > 2 do b = 5 end a*b' 6
+assert 'a = 1 if 2 > 1 do a=3 end a*3' 9
+assert 'a = 1 if 4 > a do a = a+1 end if 2 > 1 do a=a+3 end a*3' 15
+# assert 'a = 1 while 5 > a do a=a+1 end a' 5
+echo "## Function Test"
+assert 'hoge=3 def myFunc() a = 1 while 5 > a do a=a+1 end end hoge' 3
+assert 'def myFunc() a = 1 b=2 return 3+a*b end myFunc()' 5
+assert 'def myFunc() a = 1 b=2 return 3+a*b end 2 * myFunc()' 10
+assert '
+def hoge()
+  return 1+1
+end
 
-# def fuga()
-#   return 2+2-hoge()
-# end
+def fuga()
+  return 2+2-hoge()
+end
 
-# return hoge()+fuga()*3' 8
-# assert '
-# def sum(a, b)
-#   return a+b
-# end
+return hoge()+fuga()*3' 8
+assert '
+def sum(a, b)
+  return a+b
+end
 
-# sum(3,6)' 9
+sum(3,6)' 9
 
-# assert '
-# def fibo(a)
-#   if a == 0 do
-#     return 0
-#   end
-#   if a == 1 do
-#     return 1
-#   end
-#   return fibo(a-1)+fibo(a-2)
-# end
+assert '
+def fibo(a)
+  if a == 0 do
+    return 0
+  end
+  if a == 1 do
+    return 1
+  end
+  return fibo(a-1)+fibo(a-2)
+end
 
-# fibo(10)' 55
+fibo(10)' 55
 
 assert '
 class Motor
-  def on()
-    return 5
+  def on(a)
+    return 5*a
   end
 end
 
 a = Motor()
 
 class LED
-  def on()
-    return 3
+  def on(a, b)
+    return a*b
   end
 
   def off()
@@ -124,7 +124,7 @@ end
 
 b = LED()
 c = Motor()
-c.on()+b.on()' 8
+c.on(11)+b.on(1, 10)' 65
 
 echo "DONE"
 

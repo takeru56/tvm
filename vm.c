@@ -289,7 +289,6 @@ Bytecode parse_bytecode(char* str)
   int cnt = 0;
   int pos = 0;
 
-
   // u4 skip magic number
   for (int i=0; i<4; i++) {
     cnt += 2;
