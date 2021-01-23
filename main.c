@@ -22,11 +22,22 @@ int main(int argc, char **argv) {
 
   fclose(fp);
   Value val = result.return_value;
-  if (val.type == VAL_BOOL) {
-    return val.as.boolean;
-  }
-  if (val.type == VAL_NUMBER) {
-    return val.as.number;
+  switch(val.type) {
+    case VAL_BOOL: {
+      return val.as.boolean;
+      break;
+    }
+    case VAL_NUMBER: {
+      return val.as.number;
+      break;
+    }
+    case VAL_INSTANCE: {
+      return val.as.instance.class->index;
+      break;
+    }
+    default: {
+      return 1;
+    }
   }
   return 1;
 }

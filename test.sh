@@ -105,6 +105,11 @@ end
 fibo(10)' 55
 
 assert '
+class Motor
+  def hoge()
+  end
+end
+
 class LED
   def on()
   end
@@ -112,11 +117,8 @@ class LED
   def off()
   end
 end
-
-a = 3
-a
-' 3
-
+LED()
+' 1
 
 echo "DONE"
 

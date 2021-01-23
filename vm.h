@@ -16,6 +16,8 @@
 #define BOOL_VAL(value) ((Value){ VAL_BOOL, { .boolean = value } })
 #define NIL_VAL() ((Value){.type = VAL_NIL})
 #define FUNCTION_VAL(value) ((Value){VAL_FUNCTION, { .function = value}})
+#define INSTANCE_VAL(value) ((Value){VAL_INSTANCE, { .instance = value}})
+#define INSTANCE(value) ((Instance){value})
 #define EXEC_RESULT(type, value) ((ExecResult){type, value})
 
 typedef enum {
@@ -37,6 +39,7 @@ typedef enum {
   OP_RETURN,
   OP_LOAD_LOCAL,
 	OP_STORE_LOCAL,
+  OP_INSTANECE,
 } opcode;
 
 typedef enum {
@@ -44,6 +47,7 @@ typedef enum {
   VAL_NIL,
   VAL_NUMBER,
   VAL_FUNCTION,
+  VAL_INSTANCE,
 } valueType;
 
 typedef enum {
@@ -58,11 +62,22 @@ typedef struct {
 } Constant;
 
 typedef struct {
+  uint8_t index;
+  uint16_t constant_size;
+  Constant *constants;
+} Class;
+
+typedef struct {
+  Class *class;
+} Instance;
+
+typedef struct {
   valueType type;
   union {
     bool boolean;
     uint16_t number;
     Constant function;
+    Instance instance;
   } as;
 } Value;
 
@@ -74,12 +89,6 @@ typedef struct {
   uint8_t arg_num;
   Value *bp;
 } Frame;
-
-typedef struct {
-  uint16_t constant_size;
-  Constant *constants;
-} Class;
-
 
 typedef struct {
   Class classes[CLASS_MAX];

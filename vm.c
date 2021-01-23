@@ -233,6 +233,11 @@ ExecResult exec_interpret(Bytecode b)
         current_frame()->local[index] = vm_pop();
         break;
       }
+      case OP_INSTANECE: {
+        uint8_t class_index = ins[ip+1]-1;
+        Class c = b.classes[class_index-1];
+        vm_push(INSTANCE_VAL(INSTANCE(&c)));
+      }
       default:
         return EXEC_RESULT(ERROR_UNKNOWN_OPCODE, NIL_VAL());
     }
@@ -319,6 +324,7 @@ Bytecode parse_bytecode(char* str)
     }
     bcode.classes[i].constant_size = class_constant_pool_size;
     bcode.classes[i].constants = class_constants;
+    bcode.classes[i].index = i;
   }
 
   // parse constant_pool_count
