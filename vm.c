@@ -19,18 +19,19 @@ void push_frame(Frame frame)
   vm.frame_index++;
 }
 
-
-Frame new_frame(uint16_t ins_size, uint8_t* ins, uint8_t arg_num)
+Frame new_frame(uint16_t ins_size, uint8_t* ins, uint8_t arg_num, Constant *constants, bool f_method)
 {
   Frame frame = {ins_size, ins, -1};
   frame.arg_num =  arg_num;
+  frame.constants = constants;
+  frame.f_method = f_method;
   return frame;
 }
 
 void vm_init(Bytecode b)
 {
   vm.stack_top = vm.stack;
-  Frame main = new_frame(b.instruction_size, b.instructions, 0);
+  Frame main = new_frame(b.instruction_size, b.instructions, 0, b.constants, false);
   main.bp = vm.stack_top;
   vm.frames[0] = main;
   vm.frame_index = 1;
@@ -68,6 +69,17 @@ uint16_t decode_constant(uint8_t upper, uint8_t lower)
   return (255*upper + lower);
 }
 
+Constant find_method(Bytecode bytecode, uint8_t class_id, uint8_t method_id) {
+  Constant c;
+  for (int i=0; i<bytecode.classes[class_id].constant_size; i++) {
+    c = bytecode.classes[class_id].constants[i];
+    if (c.type == CONST_FUNC && c.method_index == method_id) {
+      break;
+    }
+  }
+  return c;
+}
+
 ExecResult exec_interpret(Bytecode b)
 {
   vm_init(b);
@@ -75,7 +87,6 @@ ExecResult exec_interpret(Bytecode b)
   while(current_frame()->ip < current_frame()->instruction_size - 1) {
     current_frame()->ip++;
     uint8_t* ins = current_frame()->instructions;
-
     uint16_t ip = current_frame()->ip;
     uint8_t op = ins[ip];
 
@@ -85,7 +96,7 @@ ExecResult exec_interpret(Bytecode b)
         uint8_t lower = ins[ip+2];
         current_frame()->ip += 2;
         uint16_t constant_index = decode_constant(upper, lower);
-        Constant c = b.constants[constant_index-1];
+        Constant c =  current_frame()->constants[constant_index-1];
         switch(c.type) {
           case CONST_INT: {
             upper = c.content[0];
@@ -204,13 +215,16 @@ ExecResult exec_interpret(Bytecode b)
         Value constant = *(vm.stack_top-arg_num-1);
 
         if (constant.as.function.type != CONST_FUNC) return EXEC_RESULT(ERROR_OTHER, NIL_VAL());
-        push_frame(new_frame(constant.as.function.size, constant.as.function.content, arg_num));
+        push_frame(new_frame(constant.as.function.size, constant.as.function.content, arg_num, b.constants, false));
         break;
       }
       case OP_RETURN: {
         Value val = vm_pop();
-        pop_frame();
+        Frame f = pop_frame();
         vm_pop(); // pop function
+        if (f.f_method) {
+          vm_pop(); // pop receiver
+        }
         vm_push(val);
         break;
       }
@@ -239,6 +253,24 @@ ExecResult exec_interpret(Bytecode b)
         vm_push(INSTANCE_VAL(INSTANCE(&c, class_index)));
         break;
       }
+      case OP_CALL_METHOD: {
+        uint8_t arg_num = ins[++current_frame()->ip];
+        Value val = *(vm.stack_top-arg_num-1);
+        Value receiver = *(vm.stack_top-arg_num-2);
+        push_frame(new_frame(val.as.function.size, val.as.function.content, arg_num, b.classes[receiver.as.instance.index].constants, true));
+        break;
+      }
+      case OP_LOAD_METHOD: {
+        Value receiver = vm_pop();
+        if (receiver.type != VAL_INSTANCE) {
+          return EXEC_RESULT(ERROR_NO_METHOD, NIL_VAL());
+        }
+        uint8_t index = ins[++current_frame()->ip];
+        Constant constant = find_method(b, receiver.as.instance.index, index);
+        vm_push(receiver);
+        vm_push(FUNCTION_VAL(constant));
+        break;
+      }
       default:
         return EXEC_RESULT(ERROR_UNKNOWN_OPCODE, NIL_VAL());
     }
@@ -249,7 +281,7 @@ ExecResult exec_interpret(Bytecode b)
 
 Bytecode parse_bytecode(char* str)
 {
-  Bytecode bcode;
+  Bytecode bytecode;
   uint8_t *content;
   uint8_t* insts = calloc(sizeof(uint8_t), INST_MAX);
   Constant* constants = calloc(sizeof(Constant), CONST_MAX);
@@ -288,6 +320,13 @@ Bytecode parse_bytecode(char* str)
       low = str[cnt++];
       pos++;
       uint8_t class_const_type = calc_byte(up, low);
+      uint8_t class_func_id;
+      if (class_const_type == CONST_FUNC) {
+        p =  str[cnt++];
+        low = str[cnt++];
+        pos++;
+        class_func_id = calc_byte(up, low);
+      }
       up =  str[cnt++];
       low = str[cnt++];
       pos++;
@@ -322,10 +361,11 @@ Bytecode parse_bytecode(char* str)
       class_constants[j].type = class_const_type;
       class_constants[j].size = class_const_size;
       class_constants[j].content = content;
+      class_constants[j].method_index = class_func_id;
     }
-    bcode.classes[i].constant_size = class_constant_pool_size;
-    bcode.classes[i].constants = class_constants;
-    bcode.classes[i].index = i;
+    bytecode.classes[i].constant_size = class_constant_pool_size;
+    bytecode.classes[i].constants = class_constants;
+    bytecode.classes[i].index = i;
   }
 
   // parse constant_pool_count
@@ -345,6 +385,12 @@ Bytecode parse_bytecode(char* str)
     low = str[cnt++];
     pos++;
     uint8_t const_type = calc_byte(up, low);
+    if (const_type == CONST_FUNC) {
+      // skip function id
+      p =  str[cnt++];
+      low = str[cnt++];
+      pos++;
+    }
     up =  str[cnt++];
     low = str[cnt++];
     pos++;
@@ -399,16 +445,17 @@ Bytecode parse_bytecode(char* str)
     insts[i] = calc_byte(up, low);
   }
 
-  bcode.instruction_size = inst_size;
-  bcode.instructions = insts;
-  bcode.constants = constants;
-  bcode.constant_size = constant_pool_size;
-  return bcode;
+  bytecode.instruction_size = inst_size;
+  bytecode.instructions = insts;
+  bytecode.constants = constants;
+  bytecode.constant_size = constant_pool_size;
+  bytecode.class_size = class_pool_size;
+  return bytecode;
 }
 
 ExecResult tarto_vm_run(char* input)
 {
-    Bytecode bytecode = parse_bytecode(input);
+  Bytecode bytecode = parse_bytecode(input);
 
   // for debug
   // printf("** instruction**\n");

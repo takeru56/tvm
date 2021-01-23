@@ -74,39 +74,40 @@ echo "# TESTCASES"
 # assert 'hoge=3 def myFunc() a = 1 while 5 > a do a=a+1 end end hoge' 3
 # assert 'def myFunc() a = 1 b=2 return 3+a*b end myFunc()' 5
 # assert 'def myFunc() a = 1 b=2 return 3+a*b end 2 * myFunc()' 10
-assert '
-def hoge()
-  return 1+1
-end
+# assert '
+# def hoge()
+#   return 1+1
+# end
 
-def fuga()
-  return 2+2-hoge()
-end
+# def fuga()
+#   return 2+2-hoge()
+# end
 
-return hoge()+fuga()*3' 8
-assert '
-def sum(a, b)
-  return a+b
-end
+# return hoge()+fuga()*3' 8
+# assert '
+# def sum(a, b)
+#   return a+b
+# end
 
-sum(3,6)' 9
+# sum(3,6)' 9
 
-assert '
-def fibo(a)
-  if a == 0 do
-    return 0
-  end
-  if a == 1 do
-    return 1
-  end
-  return fibo(a-1)+fibo(a-2)
-end
+# assert '
+# def fibo(a)
+#   if a == 0 do
+#     return 0
+#   end
+#   if a == 1 do
+#     return 1
+#   end
+#   return fibo(a-1)+fibo(a-2)
+# end
 
-fibo(10)' 55
+# fibo(10)' 55
 
 assert '
 class Motor
-  def hoge()
+  def on()
+    return 5
   end
 end
 
@@ -114,6 +115,7 @@ a = Motor()
 
 class LED
   def on()
+    return 3
   end
 
   def off()
@@ -122,9 +124,8 @@ end
 
 b = LED()
 c = Motor()
-c' 0
+c.on()+b.on()' 8
 
 echo "DONE"
 
 rm tvm
-

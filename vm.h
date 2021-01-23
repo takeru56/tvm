@@ -40,6 +40,8 @@ typedef enum {
   OP_LOAD_LOCAL,
 	OP_STORE_LOCAL,
   OP_INSTANECE,
+  OP_LOAD_METHOD,
+  OP_CALL_METHOD,
 } opcode;
 
 typedef enum {
@@ -59,6 +61,7 @@ typedef struct {
   constantType type;
   uint16_t size;
   uint8_t *content;
+  uint8_t method_index;
 } Constant;
 
 typedef struct {
@@ -89,9 +92,12 @@ typedef struct {
   Value local[LOCAL_MAX];
   uint8_t arg_num;
   Value *bp;
+  Constant *constants;
+  bool f_method;
 } Frame;
 
 typedef struct {
+  uint8_t class_size;
   Class classes[CLASS_MAX];
   Constant *constants;
   uint16_t constant_size;
@@ -111,6 +117,7 @@ typedef enum {
   SUCCESS,
   ERROR_DIVISION_BY_ZERO,
   ERROR_UNKNOWN_OPCODE,
+  ERROR_NO_METHOD,
   ERROR_OTHER,
 } resultType;
 
