@@ -21,7 +21,10 @@ void push_frame(Frame frame)
 
 Frame new_frame(uint16_t ins_size, uint8_t* ins, uint8_t arg_num, Constant *constants, bool f_method)
 {
-  Frame frame = {ins_size, ins, -1};
+  Frame frame;
+  frame.instruction_size = ins_size;
+  frame.instructions = ins;
+  frame.ip = -1;
   frame.arg_num =  arg_num;
   frame.constants = constants;
   frame.f_method = f_method;
@@ -31,9 +34,9 @@ Frame new_frame(uint16_t ins_size, uint8_t* ins, uint8_t arg_num, Constant *cons
 void vm_init(Bytecode b)
 {
   vm.stack_top = vm.stack;
-  Frame main = new_frame(b.instruction_size, b.instructions, 0, b.constants, false);
-  main.bp = vm.stack_top;
-  vm.frames[0] = main;
+  Frame main_func = new_frame(b.instruction_size, b.instructions, 0, b.constants, false);
+  main_func.bp = vm.stack_top;
+  vm.frames[0] = main_func;
   vm.frame_index = 1;
 }
 
@@ -313,10 +316,8 @@ ExecResult exec_interpret(Bytecode b)
 Bytecode parse_bytecode(char* str)
 {
   Bytecode bytecode;
-  uint8_t *content;
   uint8_t* insts = calloc(sizeof(uint8_t), INST_MAX);
   Constant* constants = calloc(sizeof(Constant), CONST_MAX);
-  int p = 0;
   int cnt = 0;
   int pos = 0;
 
@@ -354,9 +355,9 @@ Bytecode parse_bytecode(char* str)
       low = str[cnt++];
       pos++;
       uint8_t class_const_type = calc_byte(up, low);
-      uint8_t class_func_id;
+      uint8_t class_func_id = 0;
       if (class_const_type == CONST_FUNC) {
-        p =  str[cnt++];
+        up =  str[cnt++];
         low = str[cnt++];
         pos++;
         class_func_id = calc_byte(up, low);
@@ -372,29 +373,30 @@ Bytecode parse_bytecode(char* str)
       uint16_t class_const_size = decode_constant(upper, lower);
       switch (class_const_type) {
         case CONST_INT: {
-          content = calloc(sizeof(uint8_t), 2);
+          uint8_t *content = calloc(sizeof(uint8_t), 2);
           for (int k=0; k<class_const_size; k++) {
             up =  str[cnt++];
             low = str[cnt++];
             pos++;
             content[k] = calc_byte(up, low);
           }
+          class_constants[j].content = content;
           break;
         }
         case CONST_FUNC: {
-          content = calloc(sizeof(uint8_t), INST_MAX);
+          uint8_t *content = calloc(sizeof(uint8_t), INST_MAX);
           for (int k=0; k<class_const_size; k++) {
             up =  str[cnt++];
             low = str[cnt++];
             pos++;
             content[k] = calc_byte(up, low);
           }
+          class_constants[j].content = content;
           break;
         }
       }
       class_constants[j].type = class_const_type;
       class_constants[j].size = class_const_size;
-      class_constants[j].content = content;
       class_constants[j].method_index = class_func_id;
     }
     bytecode.classes[i].constant_size = class_constant_pool_size;
@@ -422,7 +424,7 @@ Bytecode parse_bytecode(char* str)
     uint8_t const_type = calc_byte(up, low);
     if (const_type == CONST_FUNC) {
       // skip function id
-      p =  str[cnt++];
+      up =  str[cnt++];
       low = str[cnt++];
       pos++;
     }
@@ -437,29 +439,30 @@ Bytecode parse_bytecode(char* str)
     uint16_t const_size = decode_constant(upper, lower);
     switch (const_type) {
       case CONST_INT: {
-        content = calloc(sizeof(uint8_t), 2);
+        uint8_t *content = calloc(sizeof(uint8_t), 2);
         for (int j=0; j<const_size; j++) {
           up =  str[cnt++];
           low = str[cnt++];
           pos++;
           content[j] = calc_byte(up, low);
         }
+        constants[i].content = content;
         break;
       }
       case CONST_FUNC: {
-        content = calloc(sizeof(uint8_t), INST_MAX);
+        uint8_t *content = calloc(sizeof(uint8_t), INST_MAX);
         for (int j=0; j<const_size; j++) {
           up =  str[cnt++];
           low = str[cnt++];
           pos++;
           content[j] = calc_byte(up, low);
         }
+        constants[i].content = content;
         break;
       }
     }
     constants[i].type = const_type;
     constants[i].size = const_size;
-    constants[i].content = content;
   }
 
   // parse instructions
