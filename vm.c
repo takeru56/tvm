@@ -218,10 +218,14 @@ ExecResult exec_interpret(Bytecode b)
         push_frame(new_frame(constant.as.function.size, constant.as.function.content, arg_num, b.constants, false));
         break;
       }
-      case OP_RETURN: {
+      case OP_RETURN_VAL: {
         Value val = vm_pop();
         Frame f = pop_frame();
-        vm_pop(); // pop function
+        Value function = vm_pop(); // pop function
+        if (function.as.function.method_index == 0 && f.f_method) {
+          // constructor
+          break;
+        }
         if (f.f_method) {
           vm_pop(); // pop receiver
         }
@@ -283,6 +287,19 @@ ExecResult exec_interpret(Bytecode b)
         uint8_t index = ins[++current_frame()->ip];
         Value receiver = *(current_frame()->bp-2);
         receiver.as.instance.variables[index] = vm_pop();
+        break;
+      }
+      case OP_RETURN: {
+        Frame f = pop_frame();
+        Value function = vm_pop(); // pop function
+        if (function.as.function.method_index == 0 && f.f_method) {
+          // constructor
+          break;
+        }
+        if (f.f_method) {
+          vm_pop(); // pop receiver
+        }
+        vm_push(NIL_VAL());
         break;
       }
       default:

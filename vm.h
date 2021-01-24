@@ -39,7 +39,7 @@ typedef enum {
   OP_JNT,
   OP_JMP,
   OP_CALL,
-  OP_RETURN,
+  OP_RETURN_VAL,
   OP_LOAD_LOCAL,
 	OP_STORE_LOCAL,
   OP_INSTANECE,
@@ -47,6 +47,7 @@ typedef enum {
   OP_CALL_METHOD,
   OP_LOAD_INSTANCE_VAL,
   OP_STORE_INSTANCE_VAL,
+  OP_RETURN,
 } opcode;
 
 typedef enum {
@@ -133,5 +134,6 @@ typedef struct {
   resultType type;
   Value return_value;
 } ExecResult;
+
 
 ExecResult tarto_vm_run(char*);

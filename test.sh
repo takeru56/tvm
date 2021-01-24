@@ -70,6 +70,7 @@ make tvm
 # assert 'a = 1 if 2 > 1 do a=3 end a*3' 9
 # assert 'a = 1 if 4 > a do a = a+1 end if 2 > 1 do a=a+3 end a*3' 15
 # assert 'a = 1 while 5 > a do a=a+1 end a' 5
+
 echo "## Function Test"
 assert 'hoge=3 def myFunc() a = 1 while 5 > a do a=a+1 end end hoge' 3
 assert 'def myFunc() a = 1 b=2 return 3+a*b end myFunc()' 5
@@ -106,9 +107,13 @@ fibo(10)' 55
 
 assert '
 class Motor
-  def on(a)
-    self.hoge = a*3
-    return 5*a
+  def init(num, count)
+    self.pin = num
+    self.count = count
+  end
+  def on()
+    # this is comment
+    return self.pin * self.count
   end
 
   def off()
@@ -117,6 +122,9 @@ class Motor
 end
 
 class LED
+  def init()
+  end
+
   def on(a, b)
     return a*b
   end
@@ -125,11 +133,8 @@ class LED
   end
 end
 
-a = Motor()
-b = Motor()
-a.on(5)
-b.on(2)
-b.off()' 6
+a = Motor(3, 5)
+a.on()' 15
 
 echo "DONE"
 
