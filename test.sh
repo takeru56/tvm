@@ -47,28 +47,28 @@ not_eq() {
 # compile
 make tvm
 
-echo "# TESTCASES"
-# echo "## Calculator Test"
-assert '1+1' 2
-assert '255+0' 255
-assert '255-254' 1
-assert '16*10' 160
-assert '65025/65025' 1
-assert '1==1' 1
-assert '1!=1' 0
-not_eq '1==1' 0
-not_eq '1!=1' 1
-assert '2>1' 1
-assert '1<2' 1
-assert '1>300' 0
-assert '230<33' 0
-echo "## Variable Test"
-assert 'a=1 a+3' 4
-assert '1*2' 2
-assert 'a=1 b=2 3+a*b' 5
-assert 'a = 2 b = 3 if 1 > 2 do b = 5 end a*b' 6
-assert 'a = 1 if 2 > 1 do a=3 end a*3' 9
-assert 'a = 1 if 4 > a do a = a+1 end if 2 > 1 do a=a+3 end a*3' 15
+# echo "# TESTCASES"
+# # echo "## Calculator Test"
+# assert '1+1' 2
+# assert '255+0' 255
+# assert '255-254' 1
+# assert '16*10' 160
+# assert '65025/65025' 1
+# assert '1==1' 1
+# assert '1!=1' 0
+# not_eq '1==1' 0
+# not_eq '1!=1' 1
+# assert '2>1' 1
+# assert '1<2' 1
+# assert '1>300' 0
+# assert '230<33' 0
+# echo "## Variable Test"
+# assert 'a=1 a+3' 4
+# assert '1*2' 2
+# assert 'a=1 b=2 3+a*b' 5
+# assert 'a = 2 b = 3 if 1 > 2 do b = 5 end a*b' 6
+# assert 'a = 1 if 2 > 1 do a=3 end a*3' 9
+# assert 'a = 1 if 4 > a do a = a+1 end if 2 > 1 do a=a+3 end a*3' 15
 # assert 'a = 1 while 5 > a do a=a+1 end a' 5
 echo "## Function Test"
 assert 'hoge=3 def myFunc() a = 1 while 5 > a do a=a+1 end end hoge' 3
@@ -107,11 +107,14 @@ fibo(10)' 55
 assert '
 class Motor
   def on(a)
+    self.hoge = a*3
     return 5*a
   end
-end
 
-a = Motor()
+  def off()
+    return self.hoge
+  end
+end
 
 class LED
   def on(a, b)
@@ -122,9 +125,11 @@ class LED
   end
 end
 
-b = LED()
-c = Motor()
-c.on(11)+b.on(1, 10)' 65
+a = Motor()
+b = Motor()
+a.on(5)
+b.on(2)
+b.off()' 6
 
 echo "DONE"
 

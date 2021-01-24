@@ -250,7 +250,9 @@ ExecResult exec_interpret(Bytecode b)
       case OP_INSTANECE: {
         uint8_t class_index = ins[++current_frame()->ip];
         Class c = b.classes[class_index];
-        vm_push(INSTANCE_VAL(INSTANCE(&c, class_index)));
+        // TODO 確保できるinstance valサイズの拡張
+        Value *variables = calloc(sizeof(Value), INSTANCE_VAL_MAX);
+        vm_push(INSTANCE_VAL(INSTANCE(&c, class_index, c.instance_val_size, variables)));
         break;
       }
       case OP_CALL_METHOD: {
@@ -269,6 +271,18 @@ ExecResult exec_interpret(Bytecode b)
         Constant constant = find_method(b, receiver.as.instance.index, index);
         vm_push(receiver);
         vm_push(FUNCTION_VAL(constant));
+        break;
+      }
+      case OP_LOAD_INSTANCE_VAL: {
+        uint8_t index = ins[++current_frame()->ip];
+        Value receiver = *(current_frame()->bp-2);
+        vm_push(receiver.as.instance.variables[index]);
+        break;
+      }
+      case OP_STORE_INSTANCE_VAL: {
+        uint8_t index = ins[++current_frame()->ip];
+        Value receiver = *(current_frame()->bp-2);
+        receiver.as.instance.variables[index] = vm_pop();
         break;
       }
       default:
@@ -302,6 +316,10 @@ Bytecode parse_bytecode(char* str)
 
   // parse class pool
   for (int i=0; i<class_pool_size; i++) {
+    up =  str[cnt++];
+    low = str[cnt++];
+    uint8_t instance_val_size = calc_byte(up, low);
+
     up =  str[cnt++];
     low = str[cnt++];
     uint8_t upper = calc_byte(up, low);
@@ -365,6 +383,7 @@ Bytecode parse_bytecode(char* str)
     bytecode.classes[i].constant_size = class_constant_pool_size;
     bytecode.classes[i].constants = class_constants;
     bytecode.classes[i].index = i;
+    bytecode.classes[i].instance_val_size = instance_val_size;
   }
 
   // parse constant_pool_count
