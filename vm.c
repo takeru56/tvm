@@ -99,6 +99,13 @@ Constant find_method(Bytecode bytecode, uint8_t class_id, uint8_t method_id) {
   return c;
 }
 
+bool is_include(Value range_val, Value value)
+{
+  uint16_t left = range_val.as.range[0];
+  uint16_t right = range_val.as.range[1];
+  return  left <= value.as.number && value.as.number <= right;
+}
+
 ExecResult exec_interpret(Bytecode b)
 {
   vm_init(b);
@@ -145,10 +152,10 @@ ExecResult exec_interpret(Bytecode b)
             upper = c.content[2];
             lower = c.content[3];
             uint16_t to = decode_constant(upper, lower);
-            uint16_t *range = calloc(sizeof(uint16_t), 2);
-            range[0] = from;
-            range[1] = to;
-            vm_push(RANGEL_VAL(range));
+            uint16_t *rang = calloc(sizeof(uint16_t), 2);
+            rang[0] = from;
+            rang[1] = to;
+            vm_push(RANGEL_VAL(rang));
             break;
           }
         }
@@ -339,12 +346,30 @@ ExecResult exec_interpret(Bytecode b)
         uint8_t index = ins[++current_frame()->ip];
         uint8_t val_type = ins[++current_frame()->ip];
         Value receiver = *(current_frame()->bp-2);
-        Value val = vm_pop();
-        if (!val_check(val, val_type)) {
-          return EXEC_RESULT(ERROR_INVALID_INSTANCE_ASSIGNMENT, val);
+        if (val_type == Include) {
+          Value rangeval = vm_pop();
+          Value target_val = vm_pop();
+          if (!is_include(rangeval, target_val)) {
+            return EXEC_RESULT(ERROR_INVALID_INSTANCE_ASSIGNMENT, target_val);
+          }
+          receiver.as.instance.variables[index] = target_val;
+          break;
+        } else if (val_type == Exclude) {
+          Value rangeval = vm_pop();
+          Value target_val = vm_pop();
+          if (is_include(rangeval, target_val)) {
+            return EXEC_RESULT(ERROR_INVALID_INSTANCE_ASSIGNMENT, target_val);
+          }
+          receiver.as.instance.variables[index] = target_val;
+          break;
+        } else {
+          Value val = vm_pop();
+          if (!val_check(val, val_type)) {
+            return EXEC_RESULT(ERROR_INVALID_INSTANCE_ASSIGNMENT, val);
+          }
+          receiver.as.instance.variables[index] = val;
+          break;
         }
-        receiver.as.instance.variables[index] = val;
-        break;
       }
       case OP_RETURN: {
         Frame f = pop_frame();
@@ -458,16 +483,16 @@ Bytecode parse_bytecode(char* str)
           break;
         }
         case CONST_RANGE: {
-        uint8_t *content = calloc(sizeof(uint8_t), 4);
-        for (int k=0; k<class_const_size; k++) {
-          up =  str[cnt++];
-          low = str[cnt++];
-          pos++;
-          content[j] = calc_byte(up, low);
+          uint8_t *content = calloc(sizeof(uint8_t), 4);
+          for (int k=0; k<class_const_size; k++) {
+            up =  str[cnt++];
+            low = str[cnt++];
+            pos++;
+            content[k] = calc_byte(up, low);
+          }
+          class_constants[j].content = content;
+          break;
         }
-        class_constants[i].content = content;
-        break;
-      }
       }
       class_constants[j].type = class_const_type;
       class_constants[j].size = class_const_size;

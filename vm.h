@@ -147,6 +147,8 @@ typedef enum {
 	Nil,
 	Range,
 	Any,
+  Include,
+	Exclude,
 } identValType;
 
 ExecResult tarto_vm_run(char*);

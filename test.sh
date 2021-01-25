@@ -49,31 +49,31 @@ make tvm
 
 # echo "# TESTCASES"
 # # echo "## Calculator Test"
-# assert '1+1' 2
-# assert '255+0' 255
-# assert '255-254' 1
-# assert '16*10' 160
-# assert '65025/65025' 1
+assert '1+1' 2
+assert '255+0' 255
+assert '255-254' 1
+assert '16*10' 160
+assert '65025/65025' 1
 
 assert 'a = true a' 1
 assert 'a = true b = false a == b' 0
-assert '2..7' 5
-# assert '1==1' 1
-# assert '1!=1' 0
-# not_eq '1==1' 0
-# not_eq '1!=1' 1
-# assert '2>1' 1
-# assert '1<2' 1
-# assert '1>300' 0
-# assert '230<33' 0
-# echo "## Variable Test"
-# assert 'a=1 a+3' 4
-# assert '1*2' 2
-# assert 'a=1 b=2 3+a*b' 5
-# assert 'a = 2 b = 3 if 1 > 2 do b = 5 end a*b' 6
-# assert 'a = 1 if 2 > 1 do a=3 end a*3' 9
-# assert 'a = 1 if 4 > a do a = a+1 end if 2 > 1 do a=a+3 end a*3' 15
-# assert 'a = 1 while 5 > a do a=a+1 end a' 5
+assert '22..33' 11
+assert '1==1' 1
+assert '1!=1' 0
+not_eq '1==1' 0
+not_eq '1!=1' 1
+assert '2>1' 1
+assert '1<2' 1
+assert '1>300' 0
+assert '230<33' 0
+echo "## Variable Test"
+assert 'a=1 a+3' 4
+assert '1*2' 2
+assert 'a=1 b=2 3+a*b' 5
+assert 'a = 2 b = 3 if 1 > 2 do b = 5 end a*b' 6
+assert 'a = 1 if 2 > 1 do a=3 end a*3' 9
+assert 'a = 1 if 4 > a do a = a+1 end if 2 > 1 do a=a+3 end a*3' 15
+assert 'a = 1 while 5 > a do a=a+1 end a' 5
 
 echo "## Function Test"
 assert 'hoge=3 def myFunc() a = 1 while 5 > a do a=a+1 end end hoge' 3
@@ -111,17 +111,17 @@ fibo(10)' 55
 
 assert '
 class Motor
-  def init(num, count)
-    self.pin: {in: 22..33} = num
-    self.count = count
+  def init(num, p)
+    self.pin: {include: 22..33} = num
+    self.count: {exclude: 4..10}= p
   end
   def on()
     # this is comment
-    return self.pin * self.count
+    return self.pin - 8
   end
 
   def off()
-    return self.hoge
+    return self.count
   end
 end
 
@@ -137,7 +137,7 @@ class LED
   end
 end
 
-a = Motor(true, 5)
+a = Motor(23, 3)
 a.on()' 15
 
 echo "DONE"
