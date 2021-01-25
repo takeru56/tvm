@@ -18,6 +18,7 @@
 #define NIL_VAL() ((Value){.type = VAL_NIL})
 #define FUNCTION_VAL(value) ((Value){VAL_FUNCTION, { .function = value}})
 #define INSTANCE_VAL(value) ((Value){VAL_INSTANCE, { .instance = value}})
+#define RANGEL_VAL(value) ((Value){ VAL_RANGE, { .range = value } })
 #define INSTANCE(value, index, size, variables) ((Instance){value, index, size, variables})
 #define EXEC_RESULT(type, value) ((ExecResult){type, value})
 
@@ -56,12 +57,14 @@ typedef enum {
   VAL_NUMBER,
   VAL_FUNCTION,
   VAL_INSTANCE,
+  VAL_RANGE,
 } valueType;
 
 typedef enum {
   CONST_INT,
   CONST_FUNC,
   CONST_BOOL,
+  CONST_RANGE,
 } constantType;
 
 typedef struct {
@@ -92,6 +95,7 @@ typedef struct Value {
     uint16_t number;
     Constant function;
     Instance instance;
+    uint16_t *range;
   } as;
 } Value;
 
@@ -129,6 +133,7 @@ typedef enum {
   ERROR_UNKNOWN_OPCODE,
   ERROR_NO_METHOD,
   ERROR_OTHER,
+  ERROR_INVALID_INSTANCE_ASSIGNMENT,
 } resultType;
 
 typedef struct {
@@ -136,5 +141,12 @@ typedef struct {
   Value return_value;
 } ExecResult;
 
+typedef enum {
+  Num,
+	Bool,
+	Nil,
+	Range,
+	Any,
+} identValType;
 
 ExecResult tarto_vm_run(char*);

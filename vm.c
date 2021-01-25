@@ -60,10 +60,26 @@ uint8_t trans(unsigned char c)
 	return 0;
 }
 
-uint8_t calc_byte(unsigned char upper, unsigned char lower) {
+uint8_t calc_byte(unsigned char upper, unsigned char lower)
+{
   uint8_t up =  16*trans(upper);
   uint8_t low = trans(lower);
   return up + low;
+}
+
+bool val_check(Value val, identValType iv)
+{
+  switch (iv) {
+    case Num: {
+      return val.type == 2;
+    }
+    case Bool: {
+      return val.type == 0;
+    }
+    default: {
+      return true;
+    }
+  }
 }
 
 uint16_t decode_constant(uint8_t upper, uint8_t lower)
@@ -120,6 +136,19 @@ ExecResult exec_interpret(Bytecode b)
           }
           case CONST_FUNC: {
             vm_push(FUNCTION_VAL(c));
+            break;
+          }
+          case CONST_RANGE: {
+            upper = c.content[0];
+            lower = c.content[1];
+            uint16_t from = decode_constant(upper, lower);
+            upper = c.content[2];
+            lower = c.content[3];
+            uint16_t to = decode_constant(upper, lower);
+            uint16_t *range = calloc(sizeof(uint16_t), 2);
+            range[0] = from;
+            range[1] = to;
+            vm_push(RANGEL_VAL(range));
             break;
           }
         }
@@ -310,7 +339,11 @@ ExecResult exec_interpret(Bytecode b)
         uint8_t index = ins[++current_frame()->ip];
         uint8_t val_type = ins[++current_frame()->ip];
         Value receiver = *(current_frame()->bp-2);
-        receiver.as.instance.variables[index] = vm_pop();
+        Value val = vm_pop();
+        if (!val_check(val, val_type)) {
+          return EXEC_RESULT(ERROR_INVALID_INSTANCE_ASSIGNMENT, val);
+        }
+        receiver.as.instance.variables[index] = val;
         break;
       }
       case OP_RETURN: {
@@ -424,6 +457,17 @@ Bytecode parse_bytecode(char* str)
           class_constants[j].content = content;
           break;
         }
+        case CONST_RANGE: {
+        uint8_t *content = calloc(sizeof(uint8_t), 4);
+        for (int k=0; k<class_const_size; k++) {
+          up =  str[cnt++];
+          low = str[cnt++];
+          pos++;
+          content[j] = calc_byte(up, low);
+        }
+        class_constants[i].content = content;
+        break;
+      }
       }
       class_constants[j].type = class_const_type;
       class_constants[j].size = class_const_size;
@@ -490,6 +534,17 @@ Bytecode parse_bytecode(char* str)
         }
       case CONST_FUNC: {
         uint8_t *content = calloc(sizeof(uint8_t), INST_MAX);
+        for (int j=0; j<const_size; j++) {
+          up =  str[cnt++];
+          low = str[cnt++];
+          pos++;
+          content[j] = calc_byte(up, low);
+        }
+        constants[i].content = content;
+        break;
+      }
+      case CONST_RANGE: {
+        uint8_t *content = calloc(sizeof(uint8_t), 4);
         for (int j=0; j<const_size; j++) {
           up =  str[cnt++];
           low = str[cnt++];

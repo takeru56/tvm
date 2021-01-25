@@ -35,6 +35,14 @@ int main(int argc, char **argv) {
       return val.as.instance.index;
       break;
     }
+    case VAL_NIL: {
+      return 0;
+      break;
+    }
+    case VAL_RANGE: {
+      return val.as.range[1]-val.as.range[0];
+      break;
+    }
     default: {
       return 1;
     }

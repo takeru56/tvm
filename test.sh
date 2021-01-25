@@ -54,8 +54,10 @@ make tvm
 # assert '255-254' 1
 # assert '16*10' 160
 # assert '65025/65025' 1
+
 assert 'a = true a' 1
 assert 'a = true b = false a == b' 0
+assert '2..7' 5
 # assert '1==1' 1
 # assert '1!=1' 0
 # not_eq '1==1' 0
@@ -110,7 +112,7 @@ fibo(10)' 55
 assert '
 class Motor
   def init(num, count)
-    self.pin: number = num
+    self.pin: {in: 22..33} = num
     self.count = count
   end
   def on()
@@ -135,7 +137,7 @@ class LED
   end
 end
 
-a = Motor(3, 5)
+a = Motor(true, 5)
 a.on()' 15
 
 echo "DONE"
