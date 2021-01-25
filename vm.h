@@ -61,6 +61,7 @@ typedef enum {
 typedef enum {
   CONST_INT,
   CONST_FUNC,
+  CONST_BOOL,
 } constantType;
 
 typedef struct {

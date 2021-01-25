@@ -107,6 +107,17 @@ ExecResult exec_interpret(Bytecode b)
             vm_push(NUMBER_VAL(decode_constant(upper, lower)));
             break;
           }
+          case CONST_BOOL: {
+            upper = c.content[0];
+            lower = c.content[1];
+            uint8_t val = decode_constant(upper, lower);
+            if (val == 0) {
+              vm_push(BOOL_VAL(false));
+              break;
+            }
+            vm_push(BOOL_VAL(true));
+            break;
+          }
           case CONST_FUNC: {
             vm_push(FUNCTION_VAL(c));
             break;
@@ -144,6 +155,15 @@ ExecResult exec_interpret(Bytecode b)
       case OP_EQ: {
         Value r = vm_pop();
         Value l = vm_pop();
+        if (r.type == VAL_BOOL) {
+          if (l.as.boolean == r.as.boolean) {
+            vm_push(BOOL_VAL(true));
+            break;
+          }
+          vm_push(BOOL_VAL(false));
+          break;
+        }
+
         if (l.as.number-r.as.number == 0) {
           vm_push(BOOL_VAL(true));
           break;
@@ -288,6 +308,7 @@ ExecResult exec_interpret(Bytecode b)
       }
       case OP_STORE_INSTANCE_VAL: {
         uint8_t index = ins[++current_frame()->ip];
+        uint8_t val_type = ins[++current_frame()->ip];
         Value receiver = *(current_frame()->bp-2);
         receiver.as.instance.variables[index] = vm_pop();
         break;
@@ -383,6 +404,15 @@ Bytecode parse_bytecode(char* str)
           class_constants[j].content = content;
           break;
         }
+        case CONST_BOOL: {
+          uint8_t *content = calloc(sizeof(uint8_t), 1);
+          up =  str[cnt++];
+          low = str[cnt++];
+          pos++;
+          content[0] = calc_byte(up, low);
+          class_constants[j].content = content;
+          break;
+        }
         case CONST_FUNC: {
           uint8_t *content = calloc(sizeof(uint8_t), INST_MAX);
           for (int k=0; k<class_const_size; k++) {
@@ -449,6 +479,15 @@ Bytecode parse_bytecode(char* str)
         constants[i].content = content;
         break;
       }
+      case CONST_BOOL: {
+        uint8_t *content = calloc(sizeof(uint8_t), 1);
+        up =  str[cnt++];
+        low = str[cnt++];
+        pos++;
+        content[0] = calc_byte(up, low);
+        constants[i].content = content;
+        break;
+        }
       case CONST_FUNC: {
         uint8_t *content = calloc(sizeof(uint8_t), INST_MAX);
         for (int j=0; j<const_size; j++) {
